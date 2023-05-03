@@ -1,0 +1,349 @@
+---
+title: "Introducing R"
+output: html_notebook
+---
+
+In this notebook, we'll introduce some of the fundamental concepts of the R programming language, preparing us for the usage of humdrumR itself.
+You might also be interested in our "[R primer](https://computational-cognitive-musicology-lab.github.io/humdrumR/articles/RPrimer.html)", on the humdrumR website.
+
+Open this notebook in Rstudio.
+Throughout the notebook there are "code blocks", marked off with backticks and `{r}`.
+You can run these code blocks by clicking the green arrow at the right side of the window.
+You can also manipulate or add to the blocks, then click the arrow again!
+
+# Basics
+
+The basics of R syntax are similar to many other programming languages.
+
+We can do arithmetic
+
+```{r}
+4 + 5
+
+100 * -3
+
+2^8 # exponents
+
+# These comments are ignored
+```
+
+and "call" functions with zero or more "arguments" inside of parentheses:
+
+
+```{r}
+Sys.time()
+
+sqrt(2)
+
+log(8, base = 2)
+
+```
+
+In R, we can also use functions in "pipes," which often saves typing.
+The R pipe looks like `|>`, and you still need those parentheses!
+
+```{r}
+
+2 |> sqrt()
+
+16 |> log(base = 2) |> sqrt()
+
+```
+
+## Assignment
+
+Like other programming languages, we can give things names by "assigning" them to a variable.
+In R, we have leftward `<-` and rightward `->` assignment; rightward assignment is useful with pipes!
+
+```{r}
+
+x <- 4
+
+2^x
+
+16 |> log(base = 2) -> y
+
+2^(x + y)
+
+```
+
+
+## Vectors
+
+There are three types of basic, "atomic" data we work with in R:
+
+```{r}
+
+# Numbers:
+
+145
+3.2
+2.2e6 # scientific notaion, e6 -> * 10^6
+
+# Character strings:
+
+"C Major"
+"X"
+"" # empty string
+
+# Logical values
+
+TRUE
+FALSE
+NA # invalid data
+NULL # empty, no data
+```
+
+However, the best part of R is that these basic data types (except `NULL`) are *always* vectors: ordered collections.
+The value `3.2` is simply a vector of one number, etc.
+
+We can make vectors directly using the the `c()` function:
+
+```{r}
+
+c(3, 2, 1.6)
+
+c('I', 'IV', 'V', 'I')
+
+c(TRUE, FALSE, TRUE)
+
+```
+
+We often create sequences of numbers using `:` or the `seq()` function:
+
+```{r}
+1:100
+
+seq(0, 1, by = .01)
+
+```
+
+The key of R's vectorization is that we, as programmers, don't need to worry about each element of the vector.
+We can treat a vector like a single object, and R will ablige.
+For example, we can do math like:
+
+```{r}
+
+2^(0:10) - 1
+
+(1:10) - (10:1)
+
+```
+
+Or work with strings like:
+
+```{r}
+paste(1:26, letters, sep = ': ')
+
+paste('Chord', 1:10)
+
+# Regular expressions:
+grepl('[aeiou]', letters)
+
+```
+
+Or get logical values:
+
+```{r}
+
+
+# 
+2^(0:10) > 500
+
+
+
+# How many numbers between 0 and 1000 are divisible by 7?
+
+
+```
+
+
+
+You'll often want to know how long your vectors are:
+
+```{r}
+
+length((2^5):(2^10))
+
+length(letters)
+
+```
+
+Vectorization works very well when you are working with vectors that are either 1) all the same length or 2) length 1 (scalar).
+If vectors are different lengths, the shorter one will be "recycled" (repeated) to match the longer one.
+
+```{r}
+
+c(0, 5) * 1:10
+
+```
+
+
+### Indexing 
+
+"Indexing" means to select subsets of a vector.
+We use the `[]` operators, which can be provided numbers or logical values.
+
+```{r}
+
+letters[1:10]
+
+# get every other letter in the alphabet
+
+# get all numbers between 1:1000 that are divisible by 9
+
+```
+
+Negative numbers can be used to *remove* those indices:
+
+```{r}
+
+letters[-1]
+
+letters[-1:-10]
+```
+
+# Data frames
+
+To work with real data, we'll want to put our vectors in to "data frames": collections of vectors that are all the same length.
+
+```{r}
+
+
+scale <- data.frame(Letter =  c("C", "D", "E", "F", "G", "A", "B", "C"),
+                    PitchClass =c(0, 2, 4, 5, 7, 9, 11, 12),
+                    Interval = c("P1", "M2", "M3", "P4", "P5", "M6", "M7", "P8"))
+scale
+```
+
+Notice that we gave each vector a name *inside* the data frame.
+We can access each column using `$`:
+
+```{r}
+
+scale$Letter
+```
+
+We can add to the data frame by assigning to that same `$`:
+
+```{r}
+
+scale$Tonic <- scale$Letter == 'C'
+scale
+
+```
+
+
+We can index data frames using `[i, j]`, where `i` indexes rows and `j` indexes columns:
+
+```{r}
+
+scale[1:5, ]
+
+scale[ , 1:2]
+
+# Extract the rows of scale with perfect intervals.
+
+```
+
+
+## Getting Inside the Data Frame
+
+
+The real magic to R comes from a lot of "syntactic sugar" R has to make working with data frames easier.
+We use functions that "look inside" the namespace of the data frame, allowing us to use the vectors (columns) of the data frame freely.
+The `with()` function is the basic approach.
+
+```{r}
+with(scale, diff(PitchClass))
+
+with(scale, 
+     {
+       n <- 12
+       n - PitchClass
+       }
+     )
+
+
+```
+
+I can also use `within()` if I want to add columns to the data frame:
+
+```{r}
+
+within(scale, {StepSize <- c(diff(PitchClass), NA)})
+
+```
+
+The `subset()` command is another command that can see "inside" the data frame:
+
+```{r}
+
+subset(scale, (PitchClass %% 2) == 0)
+
+
+# Find the subset of scale where there is a whole step above
+
+```
+
+# Real Data
+
+Let's get to some real data!
+
+When working in R, the first thing you'll always want to do is decide what "working directory" (on your computer) you want to work in.
+(You can avoid this by typing out the complete file-path of every file you work with, but that can get tedious!)
+Use `getwd()` to see the current working directory, and `setwd()` to change it.
+For most of our workshop, we'll want our working directory set to the basic directory of our `humdrumRworkshop` repo, which you cloned (downloaded).
+This *notebook* file will automatically run chunks within this directory (which is where the the notebook is located!), but for other work, you'll want to set your working directory to where ever the repo is on your machine:
+
+```{r, eval=FALSE}
+setwd("~/Bridge/Professional/Grants/humdrumR/Workshop_2023/humdrumRworkshop/")
+```
+
+In the repo, you'll find some data I've prepared in a file called `LennonAndMcCartney.Rd`.
+Load it with, which will load a data.frame called `LandM`
+
+```{r}
+load('LennonAndMcCartney.Rd')
+
+LandM
+
+```
+This is a data frame, consisting of 3,605 rows, with eight columns (vectors) of data.
+We can use `with`, `within`, and `subset()` to drop inside the data and do some analysis.
+
+```{r}
+
+with(LandM, hist(MIDI))
+
+with(LandM, table(Chord))
+
+with(LandM, table(Chord, Tonic))
+
+with(subset(LandM, Tonic == 2), table(Chord)) |> barplot()
+
+
+
+```
+
+Woh, is there really a A flat major chord happening when the tonic is D?
+
+```{r}
+
+subset(LandM, Chord == 'A-M' & Tonic == 2)
+
+```
+
+
+# Other stuff
+
+
+lists
+
+ifelse
+
+defining functions
+
+logical
+
+table/tally
