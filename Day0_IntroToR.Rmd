@@ -1,6 +1,8 @@
 ---
 title: "Introducing R"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 In this notebook, we'll introduce some of the fundamental concepts of the R programming language, preparing us for the usage of humdrumR itself.
@@ -15,7 +17,7 @@ You can also manipulate or add to the blocks, then click the arrow again!
 
 The basics of R syntax are similar to many other programming languages.
 
-We can do arithmetic
+We can do arithmetic and logic
 
 ```{r}
 4 + 5
@@ -25,6 +27,14 @@ We can do arithmetic
 2^8 # exponents
 
 # These comments are ignored
+
+TRUE | FALSE
+
+TRUE & FALSE
+
+!TRUE
+
+
 ```
 
 and "call" functions with zero or more "arguments" inside of parentheses:
@@ -50,10 +60,18 @@ The R pipe looks like `|>`, and you still need those parentheses!
 
 ```
 
+Most importantly, we can look up how to use functions with `?`:
+
+```{r}
+
+?log
+
+```
+
 ## Assignment
 
 Like other programming languages, we can give things names by "assigning" them to a variable.
-In R, we have leftward `<-` and rightward `->` assignment; rightward assignment is useful with pipes!
+In R, we have leftward `<-` and rightward `->` assignment; rightward assignment is useful when combined with pipes!
 
 ```{r}
 
@@ -64,6 +82,8 @@ x <- 4
 16 |> log(base = 2) -> y
 
 2^(x + y)
+
+12 %% 7 # modulo 7
 
 ```
 
@@ -94,7 +114,7 @@ NA # invalid data
 NULL # empty, no data
 ```
 
-However, the best part of R is that these basic data types (except `NULL`) are *always* vectors: ordered collections.
+A core feature of R is that these basic data types (except `NULL`) are *always* vectors: ordered collections.
 The value `3.2` is simply a vector of one number, etc.
 
 We can make vectors directly using the the `c()` function:
@@ -109,17 +129,26 @@ c(TRUE, FALSE, TRUE)
 
 ```
 
-We often create sequences of numbers using `:` or the `seq()` function:
+
+We often create vectors using other functions; for example, making sequences of numbers using `:` or `seq()`, or using `rep()` (repeat).
 
 ```{r}
 1:100
 
 seq(0, 1, by = .01)
 
+rep(c('A', 'B', 'C', 'D'), 5)
+
 ```
 
-The key of R's vectorization is that we, as programmers, don't need to worry about each element of the vector.
-We can treat a vector like a single object, and R will ablige.
+---------------------------------------------------------------------------------------------------------------
+
+## Vectorization
+
+
+Many R operations/functions are "vectorized," meaning that they take in vectors and output vectors that are the same length.
+This means that we, as programmers, don't need to worry about each element of the vector;
+We can treat a vector like a single object, and R will oblige.
 For example, we can do math like:
 
 ```{r}
@@ -127,6 +156,8 @@ For example, we can do math like:
 2^(0:10) - 1
 
 (1:10) - (10:1)
+
+sqrt(c(5, 10, 16))
 
 ```
 
@@ -140,32 +171,45 @@ paste('Chord', 1:10)
 # Regular expressions:
 grepl('[aeiou]', letters)
 
+
 ```
 
 Or get logical values:
 
 ```{r}
 
+2^(0:100) > 50
 
-# 
-2^(0:10) > 500
+1:10 %% 2 == 0
 
-
-
-# How many numbers between 0 and 1000 are divisible by 7?
+1:20 %in% 2^(0:4)
 
 
 ```
 
 
 
-You'll often want to know how long your vectors are:
+---------------------------------------------------------------------------------------------------------------
+
+Of course, other R functions take in vectors and return totally new vectors (or just scalars).
+Examples:
 
 ```{r}
 
-length((2^5):(2^10))
+length(seq(50, 90, by = .2))
 
-length(letters)
+length(letters) # letters is a built-in vector which is always there!
+
+sum(c(1, 5, 9))
+mean(c(1, 5, 9))
+max(c(1, 5, 9))
+
+range(c(1, 100, 2, -4))
+
+which(c(TRUE, FALSE, TRUE, TRUE))
+
+
+
 
 ```
 
@@ -179,7 +223,43 @@ c(0, 5) * 1:10
 ```
 
 
-### Indexing 
+### Excercises
+
+> Make a vector representing the line-of-fifths from Fb to B#
+
+```{r}
+
+
+
+```
+
+> What is the sum of the first 1000 integers (1 to 1000)?
+
+```{r}
+
+
+
+```
+
+
+> How many numbers between 1 and 1000 are divisible by 7?
+
+```{r}
+
+
+
+```
+
+
+> Calculate the average squared deviation between vector x and the mean of x.
+
+```{r}
+
+x <- rnorm(10, 0, 3)
+
+```
+
+## Indexing 
 
 "Indexing" means to select subsets of a vector.
 We use the `[]` operators, which can be provided numbers or logical values.
@@ -188,20 +268,45 @@ We use the `[]` operators, which can be provided numbers or logical values.
 
 letters[1:10]
 
-# get every other letter in the alphabet
+x <- c(1, 0, 2, 0, 3, 4, 0)
 
-# get all numbers between 1:1000 that are divisible by 9
+x[x > 0]
 
 ```
 
 Negative numbers can be used to *remove* those indices:
 
 ```{r}
-
 letters[-1]
 
 letters[-1:-10]
 ```
+
+Indexing doesn't just reorder or subset a vector---you can use the same index any number of times!
+
+```{r}
+
+letters[c(3, 3, 7, 7, 1, 1, 7)]
+
+```
+
+### Excercises
+
+> Get every other letter in the alphabet.
+
+```{r}
+
+
+```
+
+> Get all the numbers between 1:1000 that are divisible by 9.
+
+```{r}
+
+
+```
+
+
 
 # Data frames
 
@@ -217,7 +322,7 @@ scale
 ```
 
 Notice that we gave each vector a name *inside* the data frame.
-We can access each column using `$`:
+We can access these named columns using `$`:
 
 ```{r}
 
@@ -242,10 +347,19 @@ scale[1:5, ]
 
 scale[ , 1:2]
 
-# Extract the rows of scale with perfect intervals.
+
 
 ```
 
+### Excercises
+
+> Extract the rows scale with perfect intervals.
+
+
+```{r}
+
+
+```
 
 ## Getting Inside the Data Frame
 
@@ -256,6 +370,8 @@ The `with()` function is the basic approach.
 
 ```{r}
 with(scale, diff(PitchClass))
+
+with(scale, Letter[PitchClass %% 2 == 0])
 
 with(scale, 
      {
@@ -281,10 +397,15 @@ The `subset()` command is another command that can see "inside" the data frame:
 
 subset(scale, (PitchClass %% 2) == 0)
 
+```
 
-# Find the subset of scale where there is a whole step above
+> Find the subset of the scale with whole steps above.
+
+```{r}
+
 
 ```
+
 
 # Real Data
 
@@ -300,8 +421,11 @@ This *notebook* file will automatically run chunks within this directory (which 
 setwd("~/Bridge/Professional/Grants/humdrumR/Workshop_2023/humdrumRworkshop/")
 ```
 
+-----------------------------------------------------------------------------------------------------
+
+
 In the repo, you'll find some data I've prepared in a file called `LennonAndMcCartney.Rd`.
-Load it with, which will load a data.frame called `LandM`
+Load it with `load()`, which will load a data.frame called `LandM`
 
 ```{r}
 load('LennonAndMcCartney.Rd')
@@ -309,6 +433,8 @@ load('LennonAndMcCartney.Rd')
 LandM
 
 ```
+
+
 This is a data frame, consisting of 3,605 rows, with eight columns (vectors) of data.
 We can use `with`, `within`, and `subset()` to drop inside the data and do some analysis.
 
@@ -326,24 +452,304 @@ with(subset(LandM, Tonic == 2), table(Chord)) |> barplot()
 
 ```
 
-Woh, is there really a A flat major chord happening when the tonic is D?
+## Group by
+
+R has large number of different functions which allow us to split data.frames (or vectors) into groups, based on values 
+in other vectors.
+These arguments/functions are often called "by" or "groupby," but not always.
+
 
 ```{r}
 
-subset(LandM, Chord == 'A-M' & Tonic == 2)
+split(LandM, LandM$Song)
+
+by(LandM, LandM$Song, nrow)
+```
+
+We can then, apply various functions to each sub-group of the data, and get the result.
+
+```{r}
+
+with(LandM, aggregate(MIDI, by = list(Song), mean, na.rm = TRUE))
+
+within(LandM, tapply(MIDI, Song, \(x) x - mean(x, na.rm = TRUE)) |> unlist() -> SongOffset)
 
 ```
+
+### Excercises
+
+
+> Who sings higher, John or Paul?
+
+```{r}
+
+
+
+```
+
+
+> Whose songs have wider ranges, John or Paul?
+
+```{r}
+
+
+
+```
+
+
+> Are longer durations more likely on high notes, relative to low notes?
+
+```{r}
+
+
+
+```
+
+> Which scale degrees are sung on the longest durations?
+
+```{r}
+
+
+
+```
+
+
+
 
 
 # Other stuff
 
 
-lists
 
-ifelse
 
-defining functions
 
-logical
 
-table/tally
+## Defining Functions
+
+In R, you can define new functions using the syntax `\(arguments) expression`.
+For example,
+
+```{r}
+square <- \(x) x^2
+
+square(12)
+
+```
+
+
+> Write a function that converts MIDI (pitch) numbers to 12-tone pitch classes.
+
+```{r}
+
+
+
+```
+
+
+> Write a function that changes compound steps (like 9 or 11) to their simple version (2 and 4)
+
+```{r}
+
+
+
+```
+
+
+
+
+> Write a function which checks whether a number is a "whole number" (integer). I.e., 3.2 = FALSE, 15.0 = TRUE.
+
+```{r}
+
+
+
+```
+
+
+> Write a function which "standardizes" a numeric input vector; i.e., centers it at zero and makes the standard deviation 1.
+> You can get the standard deviation with the sd() function.
+
+
+## Lists
+
+The last major data type in R is the `list`.
+Lists are flexible objects: lists can hold any number of any type of data, including other lists!
+
+```{r}
+
+list(1, 2, 3)
+
+list('A', 1:100, list(TRUE, TRUE, TRUE))
+
+chords <- list(CM = c(1, 4, 7), GMm = c(2, 7, 11), FMM = c(0, 4, 5, 9))
+
+```
+
+Lists can be index just like vectors---and you can also index using the names of the list (this works for vectors too, actually).
+
+```{r}
+chords[2]
+
+chords[c('CM', 'FMM', 'GMm','CM')]
+```
+
+However, you'll see that what you get from doing this is just another list!
+If you actually want to access the value *inside* the list you'll need to use `$` (just like a data frame)
+or use double `[[]]`.
+
+```{r}
+
+chords$DM <- chords$CM + 2 |> sort()
+
+chords[['CMM']] <- ((chords[['FMM']] - 5) %% 12) |> sort()
+
+chords$DM
+
+```
+
+
+(Data frames are actually special lists, where all list elements are the same length.)
+
+### Lapply
+
+We will often end up with lists of values---lists of vectors or lists of data frames, for example.
+If we want to work with lists of data, we can't rely on "plain" vectorization.
+However, we can use `lapply` to apply functions to each element of a list (`Map` can work across multiple lists).
+
+Let's say we have a list of useful values, like the chords in each of our Lennon/McCartney songs:
+
+```{r}
+
+chordspersong <- split(LandM$Chord, LandM$Song)
+
+
+
+```
+
+Maybe we want to know how many 'mm' chords appear in each song.
+We can use `lapply` to apply a function to each element in the list---we'll make up a function on the fly!
+
+```{r}
+
+lapply(chordspersong, \(chords) sum(grepl('mm', chords)))
+
+```
+
+### Excercises
+
+> Which is the most common chord in each song?
+
+## Missing values
+
+R incorporates "missing values" into its core (atomic) vectors.
+Any index of a vector (or all of them) can be `NA`.
+For example,
+
+```{r}
+c(1, 2, NA, 3, 4)
+
+c('Guitar', 'Bass', NA)
+
+
+```
+
+How `NA` values are treated depends on the function.
+Vectorized functions will generally "pass through" `NA` values:
+
+```{r}
+c(1, 2, NA, 3, 4) + 2
+
+
+sqrt(c(1, 2, NA, 3))
+
+nchar(c('a', 'b', NA, 'c'))
+
+
+```
+
+For many functions, the presence of a single `NA` will (by default) result in `NA` output:
+
+
+```{r}
+
+k<- 1:100
+
+k[45] <- NA
+
+mean(k)
+
+```
+
+This is often annoying, but is actually a good thing, because it forces us to be aware of missing data.
+Typically, there are options (arguments) to allow us to ignore `NA` values, if we want to---the most common
+is `na.rm`:
+
+```{r}
+
+mean(k, na.rm = TRUE)
+
+```
+
+In other cases, we might need to manually remove the `NA`'s using indexing.
+The `is.na` function will come in handy!
+
+```{r}
+
+mean(k[!is.na(k)])
+
+```
+
+------------------------------------------------------------------------------
+
+Another missing value you might encounter is `NULL`.
+`NULL` is not a vector; `NULL` is a single "empty" value, with length == 0.
+You can check if something is null using `is.null()`.
+
+### Excercises
+
+> How many rests occur in each Paul McCartney song?
+
+
+
+
+
+## If and Else
+
+In R we can create pretty standard conditional blocks using `if` and `else`:
+
+```{r}
+x <- 714
+
+if (x %% 3 == 0) {
+        print("714 is divisible by three")
+} else {
+        print("714 is not divisibly by three")
+}
+
+```
+
+However, we can also do *vectorized* conditions using `ifelse()`.
+For example, recall that in our Lennon & McCartney data, rests in the vocal part show up as `NA` in the MIDI column.
+What if we wanted these `NA` values to be something else?
+
+```{r}
+
+within(LandM, MIDI <- ifelse(is.na(MIDI), "Rest", MIDI))
+
+```
+
+Wherever MIDI is `NA`, ifelse places a "Rest"; wherever MIDI is not `NA`, the original value is returned.
+
+
+
+### Excercise
+
+> Write a function that translates pich class intervals (0-11) to their "classes" (0-6).
+> I.e., 7 -> 5, 11 -> 1, etc.
+
+```{r}
+
+
+
+```
+
