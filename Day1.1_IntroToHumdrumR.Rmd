@@ -1,0 +1,328 @@
+---
+title: "Introducing humdrumR"
+subtitle: "Georgia Tech, humdrumR Workshop"
+author: "Nat Condit-Schultz"
+date: "May 11, 2023"
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_float: true
+    theme: flatly
+---
+
+
+In this notebook, we'll get started with humdrumℝ!
+
+Start by loading the package (you'll need to install it, if you haven't already!):
+
+```{r}
+library(humdrumR)
+
+```
+
+# Musical Tools
+
+Let's start by familiarizing ourselves with a few of the common pitch and rhythm manipulation functions that humdrumR provides.
+There are a *bunch* of "pitch functions" and "rhythm functions"; each one corresponds to a different pitch/rhythm data representation.
+We will focus on these:
+
++ *Pitch*
+  + `kern()`
+  + `semits()`
+  + `solfa()`
++ *Rhythm*
+  + `duration()`
+  + `recip()`
+
+
+> Use `?rhythmFunctions` or `?pitchFunctions` to see the complete list of functions.
+
+
+All of these functions take input vectors, use regular-expression matching to (attempt to) interpret the vector as pitch/rhythm information, then output in *their* format.
+In some cases, you might want to override/tell a humdrum function how to interpret data: you can do this usin the `Exclusive` argument---which tells the function what the exclusive interpretation is supposed to be.
+
+
+## Pitch 
+
+Let's start by applying `kern()` to various data tokens:
+
+```{r, results='hold'}
+
+kern('Ab5')
+
+kern('fi', Key = 'G:')
+
+kern(0:12)
+
+heyjude <- c('4c', '2A', '8r', '8A', '8c', '8d', '2G')
+
+kern(heyjude)
+
+
+```
+
+
+See what is happening? `kern()`, like other humdrumR functions, uses regular expressions to determine (guess) what type of input you are giving it, and then interprets (parses) the input appropriately.
+Notice that the rest token (`'r'`) ends up as `.` (`NA`), because `kern()` doesn't know how to parse it.
+
+Let's try a different pitch function:
+
+```{r, results='hold'}
+
+solfa('Ab5')
+
+solfa('fi', Key = 'G:')
+
+solfa(0:12)
+
+solfa(heyjude, Key = 'F:')
+
+```
+
+
+All the pitch functions have arguments `generic` and `simple`:
+
+
+```{r}
+
+kern(c('Ab5', 'F#3', 'C4'))
+kern(c('Ab5', 'F#3', 'C4'), generic = TRUE)
+kern(c('Ab5', 'F#3', 'C4'), simple = TRUE)
+kern(c('Ab5', 'F#3', 'C4'), generic = TRUE, simple = TRUE)
+
+
+```
+
+## Rhythm
+
+For rhythmic (duration) information, `recip()` and `duration()` are the two most used functions:
+
+```{r}
+duration(c('4a', '4a', '8b', '8c', '4d'))
+
+recip(c(.25, .25, .5, .125, .125, .25))
+
+```
+
+# Humdrum Data
+
+These few basic tools are enough for us to get started with some real humdrum data.
+Use the function `readHumdrum()` to import the Bach chorales, which are a very easy (homegenous) dataset to work with.
+
+
+```{r}
+chorales <- readHumdrum('ChoralesBH/KernOnly/.*krn')
+
+```
+
+
+We can look at the data:
+
+```{r}
+chorales
+
+```
+
+Or individual pieces, by using single-bracket indices:
+
+```{r}
+chorales[4]
+
+```
+
+
+We can also index spines or records using the `[[records, spines]]`:
+
+```{r}
+
+
+chorales[4][[, 2]]
+
+chorales[[40:60,]]
+
+```
+
+
+We can learn more about the data set using the `r ?humSummary` commands.
+
+
+```{r}
+
+census(chorales)
+
+spines(chorales)
+
+interpretations(chorales)
+
+reference(chorales)
+
+```
+
+
+## With and Within
+
+Ok, now what if we want to work with the actual content of data?
+We will need to think about the content of the underlying, "under the hood," humdrum data table.
+
+Remember each row in the data table represents **one** token.
+The original humdrum data token itself is saved in a field (column) called `Token`---we will be referring to `Token` a lot!
+Lots of other information is recorded in other fields.
+You can see all the fields using the `fields()` command:
+
+```{r}
+fields(chorales)
+
+```
+
+
+
+So *every single token* in the humdrum data actually has 47 different pieces of information associated with it.
+All 47 "fields" are vectors of the same length, so we can use them in vectorized operations!
+When we print out `chorales` we are, by default, seeing the original token as they appeared in the imported data.
+However, we can *see* other fields by using the `$` operator for example:
+
+```{r}
+
+chorales[1]
+
+chorales[1]$Spine
+chorales[1]$Record
+chorales$Key
+
+```
+
+
+If we actually want to access these 47 vectors, we can use `with()`:
+
+```{r}
+
+with(chorales, tally(kern(Token, simple = TRUE)))
+
+```
+
+
+When I'm inside my `with()` call, I can "see" the fields of the table, including `Token`.
+I can treat the fields just like any vector, and apply any R function, like `kern()` or `table()`.
+The cool thing is, I can also see all those other 46 fields!
+So I could do something like this:
+
+
+```{r}
+with(chorales, tally(kern(Token, simple = TRUE), Spine))
+
+
+```
+
+### Adding Fields
+
+We can take things to the next level by *adding* our own new fields to our data using the `within()` function.
+`within()` acts much like `with()`, except it (tries to) put your output back into the humdrumR-data object.
+We kept calling `kern(Token, simple = TRUE)`---to save time we could save that output as a new field:
+
+```{r}
+chorales <- within(chorales, Kern <- kern(Token, simple = TRUE))
+chorales
+
+```
+We now have two data fields: `Token` and `Kern`!
+
+Notice that I had to assign the name `Kern` (or any other name you choose) "within" `chorales`, and I also had to resave `chorales` itself.
+This might seem redundant, but its actually a nice safety valve...you can check that stuff works first before saving it for real.
+
+
+We can see that the `Token` field is still there by using `$` to activate it:
+
+```{r}
+chorales$Token
+
+```
+
+We might want to extract our rhythm information as well:
+
+```{r}
+chorales <- within(chorales, Duration <- duration(Token))
+
+```
+
+
+This is going to be a common pattern for **kern data---split the pitch and rhythm information into two separate fields.
+
+
+# Subset
+
+We can subset our data using...`subset()`.
+For example, maybe we are only interested in notes with durations of a quarter-note or more.
+
+```{r}
+subset(chorales, Duration >= .25)$Token
+
+```
+
+We could make histograms of the pitches in different subsets...
+
+```{r}
+with(subset(chorales, Duration >= .25), hist(semits(Token)))
+with(subset(chorales, Duration < .25), hist(semits(Token)))
+
+```
+
+As a shortcut, you can also write the subsetting expression directly into `with`/`within`:
+
+```{r}
+with(chorales, subset = Duration >= .25, hist(semits(Token)))
+
+```
+
+# Groupby
+
+In many cases, we'll want to break-down/group our data into more categories.
+We can do this with the groupby argument to `with`/`within` (and/or, many other humdrumR functions).
+
+```{r}
+
+with(chorales, subset = Spine < 5, by = Spine, barplot(tally(Kern), main = Spine[1]))
+
+```
+
+
+
+# Null data and the Active field
+
+
+One thing you might've noticed is that `with` and `within` ignore non-data tokens---anything starting with `*`, `!`, or `=`, or any of those pesky null tokens `.`.
+This is an option that can be controlled with the `dataTypes` argument to `with`/`within`.
+
+However, it is often the case that data that is null in one field is not null in another field.
+For example, if you run the command `kern(Token)`, all the *rests* will be output as `NA` (you'll see a `.` token);
+however, if you run the command `recip(Token)`, the rests have durations, so the duration of rests is not null.
+So, how does humdrumR decide which tokens are null?
+Bases on the "active field."
+
+We've already worked with the active field before...even if you weren't aware.
+The `$` operator sets the active field!
+The active field is the field that prints when you look at a humdrumR data object on the command line.
+
+```{r}
+
+chorales$Kern
+
+chorales$Duration
+```
+
+What this means is that, if we do `with(chorales$Token, ...)`, all the originally non-null data points (including rests) will be "visible" to `with`.
+However, if we do `with(chorales$Kern)`, the rest tokens will be considered null, and thus won't be visible inside `with`.
+We can show this by comparing the lengths of the two calls:
+
+```{r}
+
+with(chorales$Token, length(Token))
+
+with(chorales$Kern, length(Token))
+
+```
+
+
+-----------------------------------------------------------------------------------
+
+This whole business with the active field and null tokens is confusing at first, but once you get the hang of it, it becomes quite easy to control which data points you want to include, or not, in your various analyses.

@@ -9,6 +9,8 @@ output:
     toc: true
     toc_float: true
     theme: flatly
+editor_options: 
+  chunk_output_type: inline
 ---
 
 
@@ -87,6 +89,8 @@ In R, we have leftward `<-` and rightward `->` assignment; rightward assignment 
 ```{r}
 
 x <- 4
+
+x -> 4
 
 2^x |> log(base = 2) -> y
 
@@ -238,8 +242,18 @@ c(0, 5) * 1:10
 > Make a vector representing the line-of-fifths from Fb to B#
 
 ```{r}
-#
+# hint: rep() and paste()
 
+LN <- rep(c('F', 'C', 'G', 'D', 'A', 'E', 'B'), 3)
+ACC <- rep(c('-', '', '#'), each = 7)
+
+paste(LN, ACC, sep = '')
+
+paste(rep(c('F', 'C', 'G', 'D', 'A', 'E', 'B'), 3), 
+      rep(c('-', '', '#'), each = 7), 
+      sep = '')
+
+# outer(c('F', 'C', 'G', 'D', 'A', 'E', 'B'), c('-', '', '#'), paste)
 
 ```
 
@@ -247,6 +261,8 @@ c(0, 5) * 1:10
 
 ```{r}
 #
+sum(1:1000)
+
 
 
 ```
@@ -256,7 +272,9 @@ c(0, 5) * 1:10
 
 ```{r}
 #
+length(which((1:1000) %% 7 == 0))
 
+sum((1:1000) %% 7 == 0)
 
 ```
 
@@ -266,6 +284,8 @@ c(0, 5) * 1:10
 ```{r}
 #
 x <- rnorm(10, 0, 3)
+
+sum((x - mean(x)) ^ 2)
 
 ```
 
@@ -291,6 +311,12 @@ Negative numbers can be used to *remove* those indices:
 letters[-1]
 
 letters[-1:-10]
+
+letters[length(letters)]
+letters[26]
+
+tail(letters, 1)
+head(letters, 1)
 ```
 
 Indexing doesn't just reorder or subset a vector---you can use the same index any number of times!
@@ -306,14 +332,14 @@ letters[c(3, 3, 7, 7, 1, 1, 7)]
 > Get every other letter in the alphabet.
 
 ```{r}
-#
+# %% 
 
 ```
 
 > Get all the numbers between 1:1000 that are divisible by 9.
 
 ```{r}
-#
+# %%
 
 ```
 
@@ -368,6 +394,12 @@ scale[ , 1:2]
 
 
 ```{r}
+#  %in%
+# grepl()
+
+scale[scale$Interval == 'P1' | scale$Interval == 'P4' | scale$Interval == 'P5', ]
+scale[scale$Interval %in% c('P1', 'P4', 'P5'), ]
+scale[grepl('P', scale$Interval), ]
 
 
 ```
@@ -403,8 +435,12 @@ But if we go "within" the `scale` data.frame, we can then "see" `PitchClass` lik
 We can also use `within()` if we want to add columns to the data.frame:
 
 ```{r}
+ x <- 3
 
-within(scale, {StepSize <- c(diff(PitchClass), NA)})
+within(scale, {
+  StepSize <- c(diff(PitchClass), NA)
+  
+  }) -> scale
 
 ```
 
@@ -414,7 +450,10 @@ The `subset()` command is another command that can see "inside" the data.frame:
 
 ```{r}
 
-subset(scale, (PitchClass %% 2) == 0)
+subset(scale, {
+  (PitchClass %% 2) == 0
+  },
+  )
 
 ```
 
@@ -467,7 +506,9 @@ with(LandM, table(Chord))
 
 with(LandM, table(Chord, Tonic))
 
-with(subset(LandM, Tonic == 2), table(Chord)) |> barplot()
+with(subset(LandM, Tonic == 2 & Mode == 'Major'), 
+     table(Chord)
+     ) |> barplot()
 
 ```
 
@@ -495,7 +536,7 @@ These two values could be used to *divide* the data into two subsets.
 We can do this the manual way, like
 
 ```{r, echo = FALSE}
-subset(LandM, Composer == 'Paul')
+with(subset(LandM, Composer == 'Paul'), table(Chord))
 subset(LandM, Composer == 'John')
 ```
 
@@ -525,11 +566,14 @@ within(LandM, tapply(MIDI, Song, \(x) x - mean(x, na.rm = TRUE)) |> unlist() -> 
 #### Practice
 
 
+
 > Who sings higher, on average, John or Paul?
 
 ```{r}
+#
 
-
+with(LandM, data.frame(aggregate(MIDI, list(Composer), mean, na.rm = TRUE),
+                       aggregate(MIDI, list(Composer), sd, na.rm = TRUE)))
 
 ```
 
@@ -537,8 +581,8 @@ within(LandM, tapply(MIDI, Song, \(x) x - mean(x, na.rm = TRUE)) |> unlist() -> 
 > Whose songs have wider ranges, John or Paul?
 
 ```{r}
-
-
+#
+with(LandM, aggregate(MIDI, list(Composer), \(x) diff(range(x, na.rm = TRUE))))
 
 ```
 
@@ -546,7 +590,9 @@ within(LandM, tapply(MIDI, Song, \(x) x - mean(x, na.rm = TRUE)) |> unlist() -> 
 > Are longer durations more likely on high notes, relative to low notes?
 
 ```{r}
+#
 
+with(subset(LandM, !is.na(MIDI)), cor(MIDI, Duration))
 
 
 ```
@@ -554,11 +600,30 @@ within(LandM, tapply(MIDI, Song, \(x) x - mean(x, na.rm = TRUE)) |> unlist() -> 
 > Which scale degrees are sung on the longest durations?
 
 ```{r}
+#
 
+with(subset(LandM, Duration >= .5), table((MIDI - Tonic) %% 12)) |> barplot()
 
 
 ```
 
+
+> Are non-chord tones less likely to resolve by step than chord-tones?
+
+```{r}
+#
+
+
+```
+
+
+> Do John and Paul differ in their use of chord qualities?
+
+```{r}
+#
+
+
+```
 
 
 
