@@ -751,6 +751,7 @@ chordspersong <- split(LandM$Chord, LandM$Song)
 Maybe we want to know how many 'mm' chords appear in each song.
 We can use `lapply` to apply a function to each element in the list---we'll make up a function on the fly!
 
+
 ```{r}
 
 lapply(chordspersong, \(chords) sum(grepl('mm', chords)))

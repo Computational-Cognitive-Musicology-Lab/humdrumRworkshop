@@ -1,0 +1,96 @@
+---
+title: "humdrumRworkshop_practiceworksheet"
+---
+Load library
+```{r}
+library(humdrumR)
+```
+
+# Chorales
+
+> Read-in the Chorales corpus, and save the corpus.
+
+```{r}
+
+
+```
+
+
+### Rhythm
+
+> Find the distribution (counts) of all rhythmic values in the corpus (hint: use the tally() function); optionally (bar)plot as well.
+> How often does Bach use 16th notes? How often does he use half-notes? What other rhythmic values does he use?
+
+```{r}
+
+```
+
+### Scale degrees
+
+> Plot (barplot) the distribution of scale degrees in the corpus; then plot the distribution of scale degrees separately for major and minor-mode pieces.
+
+
+```{r}
+
+
+```
+
+### Melodic Intervals
+
+> Look at the distribution of melodic intervals in the Soprano part.
+
+```{r}
+
+```
+
+
+> Which voice uses the most unisons? Which voice uses the most leaps?
+
+
+```{r}
+
+
+```
+
+### Keys
+
+
+> Which keys does Bach use the most (and the least)?
+
+```{r}
+
+```
+
+
+
+# Chorales With Harmony
+
+> Load the corpus from the "WithHarm" subdirectory and save.
+
+```{r}
+
+
+```
+
+### Cadences
+
+> What chords most commonly end a phrase (i.e., fermata) in the Choralebh corpus?
+> Hint 1: you need to index to the first column, or, subset to only harm spine
+> Hint 2: fermatas are represented by ";"
+
+```{r}
+
+
+```
+
+
+> What are the top five most common roman numerals in major keys?
+> Note: The chorale data only includes one global key indication, no indications of modulations.
+
+```{r}
+
+
+```
+
+
+

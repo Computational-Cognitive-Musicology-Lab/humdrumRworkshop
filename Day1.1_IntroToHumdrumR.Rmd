@@ -18,7 +18,7 @@ Start by loading the package (you'll need to install it, if you haven't already!
 
 ```{r}
 library(humdrumR)
-
+humdrumR_version
 ```
 
 # Musical Tools
@@ -197,7 +197,18 @@ If we actually want to access these 47 vectors, we can use `with()`:
 
 ```{r}
 
-with(chorales, tally(kern(Token, simple = TRUE)))
+with(chorales, tally(solfa(Token, simple = TRUE))) |> barplot()
+
+with(chorales, mean(semits(Token), na.rm=T))
+
+with(chorales, {
+  semits <- semits(Token)
+  hist(semits[Spine == 1], col = rgb(1,0,0,.2), xlim = c(-20, 30), breaks = seq(-24,24,2), ylim = c(0,6000))
+  hist(semits[Spine == 2], col = rgb(1,1,0,.2), add = TRUE, breaks = seq(-24,24,2))
+  hist(semits[Spine == 3], col = rgb(1,0,1,.2), add = TRUE, breaks = seq(-24,24,2))
+  hist(semits[Spine == 4], col = rgb(0,1,0,.2), add = TRUE, breaks = seq(-24,24,2))
+  
+})
 
 ```
 
@@ -249,6 +260,18 @@ chorales <- within(chorales, Duration <- duration(Token))
 This is going to be a common pattern for **kern data---split the pitch and rhythm information into two separate fields.
 
 
+```{r}
+chorales <- within(chorales, Fermata <- grepl(';', Token))
+
+
+with(chorales, tally(Kern, Fermata)) |> barplot(beside=T)
+
+
+# 
+with(chorales, plot(duration(Token), semits(Token)))
+
+```
+
 # Subset
 
 We can subset our data using...`subset()`.
@@ -256,6 +279,8 @@ For example, maybe we are only interested in notes with durations of a quarter-n
 
 ```{r}
 subset(chorales, Duration >= .25)$Token
+
+
 
 ```
 
@@ -272,6 +297,7 @@ As a shortcut, you can also write the subsetting expression directly into `with`
 ```{r}
 with(chorales, subset = Duration >= .25, hist(semits(Token)))
 
+wit
 ```
 
 # Groupby
@@ -281,10 +307,33 @@ We can do this with the groupby argument to `with`/`within` (and/or, many other 
 
 ```{r}
 
-with(chorales, subset = Spine < 5, by = Spine, barplot(tally(Kern), main = Spine[1]))
+with(chorales, 
+     subset = Spine < 5, 
+     by = Spine,
+     barplot(tally(SimplePitch), 
+             main = paste('Spine', Spine[1])))
+
+
 
 ```
 
+```{r}
+# (Need to use semits() to get pitch as number => create a new field)
+
+chorales <- within(chorales, Semits <- semits(Token))
+# normalize pitch for each voice
+chorales <- within(chorales,
+                   ScaledSemits <- (Semits - mean(Semits)) / sd(Semits), 
+                   by = Spine)
+# correlate duration with normalized pitch
+
+with(chorales, cor(Duration, ScaledSemits))
+with(chorales, 
+     plot(jitter(Duration), ScaledSemits),
+     abline(lm(ScaledSemits ~ Duration))
+     )
+
+```
 
 
 # Null data and the Active field
@@ -305,9 +354,9 @@ The active field is the field that prints when you look at a humdrumR data objec
 
 ```{r}
 
-chorales$Kern
+chorales$Kern # Kern <- kern(Token)
 
-chorales$Duration
+chorales$Duration # Duration <- duration(Token)
 ```
 
 What this means is that, if we do `with(chorales$Token, ...)`, all the originally non-null data points (including rests) will be "visible" to `with`.

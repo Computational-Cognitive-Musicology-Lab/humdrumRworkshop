@@ -1,0 +1,69 @@
+---
+title: "humdrumR workshop, day 1 afternoon."
+output: html_notebook
+---
+
+
+```{r}
+readHumdrum('ChoralesBH/KernOnly/.*krn') -> bach
+
+readHumdrum('Essen/deutschl/.*/.*krn') -> essen
+
+readHumdrum('MCFlow/.*rap') -> mcflow
+
+readHumdrum('CoCoPops-Billboard/.*hum') -> billboard
+subset(billboard, Exclusive == 'harmony') |> removeEmptySpines() -> billboard
+billboard <- within(billboard, Harm <- harm(Token))
+
+readHumdrum('TAVERN/.*.krn') -> tavern
+```
+
+
+# Ngrams
+
+Within `with/within` we can use a special syntax to get n-grams.
+
+```{r}
+bach <- within(bach, Kern <- kern(Token, simple = TRUE))
+
+with(bach, tally(Token, lag(Token, 1)))
+# -> can be written:
+with(bach, tally(Token[lag = 0:1]))
+
+with(bach, paste(Token, lag(Token, 1), lag(Token, 2), lag(Token, 3), lag(Token, 4)))
+# -> can be written:
+with(bach, paste(Token[lag = 0:-4]))
+
+
+```
+
+# Melodic and Harmonic intervals
+
+We can calculate melodic and harmonic intervals usin `mint()` and `hint()`.
+
+```{r}
+within(chorales, mint(Token))
+within(chorales, hint(Token))
+
+```
+
+# Time
+
+
+The `timeline()` function measures duration from the beginning of the piece:
+
+```{r}
+within(bach, timeline(Token, pickup = Bar == 0))
+
+```
+
+
+
+`count()` is similar...
+
+```{r}
+within(chorales, count(Token, beat = tactus(TimeSignature), pickup = Bar == 0))
+
+```
+
+`metlev()`, `metcount()`

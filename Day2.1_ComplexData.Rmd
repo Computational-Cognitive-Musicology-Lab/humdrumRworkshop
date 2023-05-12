@@ -1,0 +1,225 @@
+---
+title: "Dealing with Complex data"
+subtitle: "Georgia Tech, humdrumR Workshop"
+author: "Nat Condit-Schultz"
+date: "May 11, 2023"
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_float: true
+    theme: flatly
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(humdrumR)
+```
+
+
+The humdrum syntax is very flexible. There are lots of ways that data can be organized.
+
++ We can have multiple aspects of musical scrunched into single strings (`"[4.ee-/JJ"`]).
++ Or we can spread information across...
+  + multiple spines
+  + spine paths
+  + multi-stops
++ We can also put information into tandem interpretations...
+
+When dealing with humdrum data, we have to figure out how to make sense of any of these possibilities.
+There is no general solution that humdrumR can automatically do for you!
+
+----
+
+
+When humdrumR reads in humdrum data, it reads it into a structurally agnostic "flat" table.
+Each and every token gets its own row.
+Sometimes, this is confusing, and/or not what you want!
+
+
+
+# Working with subsets of data
+
+Let's consider the CoCoPops Billboard dataset:
+
+```{r}
+
+bb <- readHumdrum('CoCoPops-Billboard/.*hum')
+
+```
+
+Take a look at this dataset---many of the files are too big to fit on our screen!
+Let's use `spines()`:
+
+```{r}
+interpretations(bb)
+
+
+```
+
+
+
+
+Our files have one to five pairs of `**kern` and `**silbe` spines, followed by `**harmony`, `chordsym`, `**phrase`...etc.
+
+
+Many (most) humdrumR functions automatically look at the `Exclusive` field to determine where/when/if they should be applied.
+This means, that functions will be fairly smart about only working on appropriate data.
+For example,
+
+```{r}
+within(bb, kern(Token))
+
+```
+
+
+The `kern()` function works on the `**kern` spines, but ignores the other spines. They all return `NA` (so we see null tokens).
+
+-----
+
+
+This is nice, but is still generally a good practice to explicitly remove/avoid data we are not interested in.
+One way is to provide `with/within` a subset argument.
+
+```{r}
+
+within(bb, subset = Exclusive == 'kern', kern(Token))
+
+```
+
+In this case, we get the exactly the same result as before, we are just being more explicit about things.
+This is going to be a safer approach in general!
+
+Notice that when you give subset as an *argument* to `within`, the command you run is applied to the subset, but the rest of he data is not removed from the object.
+
+
+
+## Discarding data
+
+Now, in many cases, we might have information in our data that we simply don't care about at all---depending on our research question.
+In this case, the best practice is just to get rid of it!
+For example we can extract only the spines we are interested in, using `Exclusive` field perhaps, and overwrite our `bb`.
+This should generally be the first thing you do after reading data in: get rid of anything you don't want.
+
+```{r}
+subset(bb, Exclusive %in% c('kern', 'silbe', 'harmony')) |> removeEmptySpines() -> bb
+
+bb
+
+```
+
+
+Ok, that's much more manegable!
+
+# Folding data
+
+Ok, we have our kern tokens (which include rhythm and pitch data), lyrics, and harmony.
+But remember, at this point each and every token is it's own row in the humdrum table.
+So the `Token` field includes both kern, silbe, and harmony, all together!
+
+```{r}
+getHumtab(bb, 'D')[ , c('Token', 'File', 'Spine', 'Record', 'Key', 'Bar', 'Exclusive')][Bar == 8][1:40]
+
+```
+
+
+Let's review the idea of 'fields' for a second.
+You can think of the fields in a humdrumR object as a third dimension in the humdrum data. 
+"Layers" that are overlaid on top of each other.
+You can also think of them as different "viewpoints" of the same data.
+
+```{r}
+bb[1]$Key
+bb[1]$Spine
+bb[1]$COC
+
+```
+
+## Folding
+
+We currently have three (types of) spines of data.
+The data kern/harm/silbe data points are at different "locations" in the humdrum data---different rows in the underlying table.
+We (might) want to "move" these data points "on top" of each other, into new fields/layers.
+This makes the data align in a way that is mor useful.
+
+We call this "folding" the humdrum data.
+Let's try it with the lyrics:
+
+```{r}
+bb <- foldExclusive(bb, 'silbe', 'kern')
+
+```
+
+The `**silbe` spines have been removed from `Token`, and moved over into a new field (`Silbe`).
+Notice that each `**silbe` spine is paired with the adjacent `**kern` spine.
+
+We can next do the same thing with the `**harmony` spine:
+
+
+```{r}
+bb <- foldExclusive(bb$Token, 'harmony', 'kern')
+
+```
+
+If there are more `**kern` spines than `**harmony` spines, the harmonies are duplicated!
+
+
+---
+
+We now have our lyrics, harmony, and kern all "aligned" for ideal analysis.
+We might want to split the pitch and rhythm informnation:
+
+```{r}
+bb <- within(bb$Token, Kern <- kern(Token), Recip <- recip(untie(Token)))
+
+
+```
+
+
+
+
+## Ditto
+
+You probably noticed that the harmony spine doesn't actually have chords aligned with every note.
+If we want to "fill forward" data into subsequent null data tokens, we can use ditto:
+
+```{r}
+bb <- within(bb$Token, Harmony <- ditto(tertian(Harmony)))
+```
+
+
+
+# Paths and Stops
+
+
+HumdrumR parses spine paths, numbering them (within parent spines) from left to right, starting from 0, in the `Path` field.
+HumdrumR parses all "multi-stops" (a.k.a., sub-tokens) as separate tokens, which are numbers in the `Stop` field, starting from 1.
+
+
+```{r}
+tavern <- readHumdrum('TAVERN/.*krn')
+
+
+```
+
+
+When analyzing music like this, its not at all clear how we *want* to treat spine paths and/or multistops.
+The laziest/easiest solution, is just to remove them:
+
+
+```{r}
+subset(tavern, Path == 0 & Stop == 1) |> removeEmptyPaths() |> removeEmptyStops() -> tavern
+
+
+```
+
+
+## Expanding paths
+
+We can "fill out" spine paths using the `expandPaths()` function.
+
+```{r}
+expandPaths(tavern)
+
+```
